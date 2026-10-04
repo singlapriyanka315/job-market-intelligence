@@ -1,0 +1,12 @@
+.venv/
+.env
+vector_db/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+reports/
+logs/
+.DS_Store
+*.pdf
+!examples/*.pdf
+.claude/

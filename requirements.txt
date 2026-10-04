@@ -1,0 +1,9 @@
+requests==2.34.2
+psycopg[binary]==3.3.6
+python-dotenv==1.2.4
+groq==1.7.0
+chromadb==1.5.9
+pypdf==6.19.0
+streamlit==1.65.0
+pandas==3.0.6
+altair==6.3.0

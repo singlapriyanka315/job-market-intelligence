@@ -1,0 +1,15 @@
+[
+ {"_note": "Synthetic record in Adzuna's documented response format (no real key used to capture it)",
+  "id": "4900000001", "title": "Senior <strong>Data Engineer</strong> - Python/Spark",
+  "description": "We are hiring a data engineer in Bengaluru. Requirements: 5+ years with Python, PySpark, Airflow and AWS. Work from home 2 days a week.",
+  "company": {"display_name": "Example Analytics Pvt Ltd"}, "location": {"display_name": "Bangalore, Karnataka"},
+  "salary_min": 2400000, "salary_max": 3600000, "salary_is_predicted": "0",
+  "created": "2026-09-30T10:00:00Z", "redirect_url": "https://www.adzuna.in/details/4900000001",
+  "contract_time": "full_time", "contract_type": "permanent"},
+ {"_note": "Synthetic - predicted salary must be ignored",
+  "id": "4900000002", "title": "Data Analyst", "description": "SQL and Power BI.",
+  "company": {"display_name": "Example Retail"}, "location": {"display_name": "Pune, Maharashtra"},
+  "salary_min": 600000, "salary_max": 600000, "salary_is_predicted": "1",
+  "created": "2026-09-29T10:00:00Z", "redirect_url": "https://www.adzuna.in/details/4900000002",
+  "contract_time": "full_time"}
+]

@@ -1,0 +1,21 @@
+Sample Candidate (fictional resume used for the demo)
+Junior Data Engineer | Bengaluru, India
+
+SUMMARY
+Data engineer with 1.5 years of experience building batch pipelines and dashboards.
+
+SKILLS
+Python, SQL, PostgreSQL, pandas, Airflow, Docker, Git, Linux, Power BI, Excel
+
+EXPERIENCE
+Data Engineer Intern, Example Fintech (2025-2026)
+- Built Airflow DAGs that load payment data from REST APIs into PostgreSQL every hour
+- Wrote SQL transformations and data quality checks; cut failed loads by 40%
+- Containerised the pipeline with Docker
+
+PROJECTS
+Job Market Intelligence: end-to-end pipeline with PostgreSQL, ChromaDB vector search and an LLM extraction step,
+evaluated against hand-labelled data; Streamlit dashboard.
+
+EDUCATION
+B.Tech Computer Science, 2025

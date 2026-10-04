@@ -1,0 +1,6 @@
+line-length = 120
+target-version = "py311"
+
+[lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E731", "E501"]  # small lambdas are fine; long lines only in data tables and prompts
