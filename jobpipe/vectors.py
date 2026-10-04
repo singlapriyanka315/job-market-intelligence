@@ -1,5 +1,6 @@
 """Semantic search over jobs (ChromaDB, local MiniLM embeddings) + resume matching."""
 
+import hashlib
 import re
 
 import chromadb
@@ -19,8 +20,16 @@ def job_document(row):
     return f"{row['title']}. Skills: {skills}. {(row['description'] or '')[:700]}"
 
 
+def _doc_hash(doc):
+    return hashlib.sha256(doc.encode()).hexdigest()[:32]
+
+
 def sync(conn):
-    """Embed new/changed unique tech jobs; remove ones no longer in gold. Returns (added, removed)."""
+    """
+    Embed new/changed unique tech jobs; remove ones no longer in gold. Returns (added, removed).
+    Change detection uses a hash of the embedded document itself, so a job is re-embedded when
+    its text changes *or* when the LLM fills in its skills.
+    """
     col = _collection()
     rows = conn.execute(
         """
@@ -32,15 +41,16 @@ def sync(conn):
     existing = {}
     if col.count():
         got = col.get(include=["metadatas"])
-        existing = {i: m.get("content_hash") for i, m in zip(got["ids"], got["metadatas"], strict=True)}
+        existing = {i: m.get("doc_hash") for i, m in zip(got["ids"], got["metadatas"], strict=True)}
 
-    todo = [r for r in rows if existing.get(str(r["job_id"])) != r["content_hash"]]
+    docs = {r["job_id"]: job_document(r) for r in rows}
+    todo = [r for r in rows if existing.get(str(r["job_id"])) != _doc_hash(docs[r["job_id"]])]
     for i in range(0, len(todo), 100):
         chunk = todo[i:i + 100]
         col.upsert(
             ids=[str(r["job_id"]) for r in chunk],
-            documents=[job_document(r) for r in chunk],
-            metadatas=[{"content_hash": r["content_hash"], "role_family": r["role_family"],
+            documents=[docs[r["job_id"]] for r in chunk],
+            metadatas=[{"doc_hash": _doc_hash(docs[r["job_id"]]), "role_family": r["role_family"],
                         "seniority": r["seniority"], "country": r["country"] or "",
                         "is_remote": bool(r["is_remote"])} for r in chunk],
         )

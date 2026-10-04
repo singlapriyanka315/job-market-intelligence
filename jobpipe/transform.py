@@ -44,14 +44,27 @@ class _TextExtractor(HTMLParser):
         self.parts.append(data)
 
 
+_TAG = re.compile(r"<\s*/?\s*[a-zA-Z][^>]*>")
+
+
 def html_to_text(raw):
+    """
+    HTML -> readable plain text. Some sources escape their HTML once more (RemoteOK sends
+    '&lt;p&gt;', Arbeitnow wraps escaped HTML inside real tags), so keep parsing until no
+    tags are left (max 3 passes).
+    """
     if not raw:
         return ""
-    if "<" not in raw:
-        return re.sub(r"[ \t]+", " ", html.unescape(raw)).strip()
-    p = _TextExtractor()
-    p.feed(raw)
-    text = html.unescape("".join(p.parts))
+    text = raw
+    for _ in range(3):
+        if "&lt;" in text and not _TAG.search(text):
+            text = html.unescape(text)
+        if not _TAG.search(text):
+            break
+        p = _TextExtractor()
+        p.feed(text)
+        text = html.unescape("".join(p.parts))
+    text = html.unescape(text)
     text = re.sub(r"[ \t\xa0]+", " ", text)
     text = re.sub(r"\n\s*\n+", "\n\n", text)
     return text.strip()

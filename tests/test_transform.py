@@ -47,6 +47,18 @@ def test_html_to_text_keeps_structure():
     assert "<" not in text
 
 
+def test_html_to_text_handles_escaped_html():
+    # RemoteOK sends HTML whose tags are themselves entity-escaped
+    text = html_to_text("&lt;p&gt;Must know &lt;b&gt;Kafka&lt;/b&gt;&lt;/p&gt;&lt;ul&gt;&lt;li&gt;Go&lt;/li&gt;&lt;/ul&gt;")
+    assert "<" not in text and "Must know Kafka" in text and "- Go" in text
+
+
+def test_html_to_text_handles_html_nested_in_html():
+    # Arbeitnow: real tags around escaped tags
+    text = html_to_text("<div>&lt;p&gt;&lt;strong&gt;Your profile&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;Python&lt;/p&gt;</div>")
+    assert "<" not in text and "Your profile" in text and "Python" in text
+
+
 def test_fix_mojibake():
     assert fix_mojibake("Lead â\u0080\u0094 Logistics") == "Lead — Logistics"
     assert fix_mojibake("Düsseldorf") == "Düsseldorf"  # already-correct text is untouched
