@@ -76,8 +76,8 @@ def run(args):
         build_silver(conn, stats)
 
         stage("3. LLM enrichment → silver.job_extractions")
-        done, missing = extract.run(conn, args.llm_limit)
-        stats["llm"] = {"extracted": done, "missing": missing}
+        done, missing, stopped = extract.run(conn, args.llm_limit)
+        stats["llm"] = {"extracted": done, "missing": missing, "stopped": stopped}
 
         stage("4. Data-quality checks")
         results, blocking = quality.run_checks(conn, run_id)

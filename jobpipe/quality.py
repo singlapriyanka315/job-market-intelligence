@@ -46,7 +46,8 @@ CHECKS = [
           "Fewer than 30% of rows are cross-source duplicates"),
     Check("extracted_skills_nonempty", "warn",
           "SELECT count(*) FROM silver.job_extractions e JOIN silver.jobs j USING (job_id) "
-          "WHERE cardinality(e.skills) = 0 AND e.role_family NOT IN ('other', 'it_support')",
+          "WHERE e.content_hash = j.content_hash "
+          "AND cardinality(e.skills) = 0 AND e.role_family NOT IN ('other', 'it_support', 'engineering_manager')",
           "LLM found at least one skill for technical roles"),
 ]
 

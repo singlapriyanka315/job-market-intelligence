@@ -6,7 +6,9 @@ DROP MATERIALIZED VIEW IF EXISTS gold.skill_demand_weekly CASCADE;
 DROP MATERIALIZED VIEW IF EXISTS gold.salary_by_role CASCADE;
 DROP MATERIALIZED VIEW IF EXISTS gold.source_summary CASCADE;
 
--- One row per unique tech job, with LLM fields when available (LLM skills, else keyword skills)
+-- One row per unique tech job, with LLM fields when available (LLM skills, else keyword skills).
+-- Only extractions made from the job's *current* text count: if a posting changed since it was
+-- extracted (or the cleaning changed), the stale result is ignored until it is re-extracted.
 CREATE VIEW gold.jobs_enriched AS
 SELECT j.job_id, j.source, j.title, j.company, j.location, j.country, j.is_remote,
        j.employment_type, j.salary_usd_year_min, j.salary_usd_year_max, j.posted_at, j.url,
@@ -18,7 +20,7 @@ SELECT j.job_id, j.source, j.title, j.company, j.location, j.country, j.is_remot
        (e.job_id IS NOT NULL) AS llm_enriched,
        date_trunc('week', coalesce(j.posted_at, j.updated_at))::date AS week
 FROM silver.jobs j
-LEFT JOIN silver.job_extractions e ON e.job_id = j.job_id
+LEFT JOIN silver.job_extractions e ON e.job_id = j.job_id AND e.content_hash = j.content_hash
 WHERE j.is_tech AND NOT j.is_duplicate;
 
 -- How often each skill is asked for, overall and per role family
@@ -65,5 +67,5 @@ SELECT j.source,
        count(*) FILTER (WHERE j.salary_usd_year_min IS NOT NULL) AS with_salary,
        max(j.posted_at)                                 AS latest_posting
 FROM silver.jobs j
-LEFT JOIN silver.job_extractions e ON e.job_id = j.job_id
+LEFT JOIN silver.job_extractions e ON e.job_id = j.job_id AND e.content_hash = j.content_hash
 GROUP BY j.source;

@@ -50,7 +50,10 @@ publishing, and serves the results in a Streamlit dashboard with semantic job se
 - **Rate-limit aware.** The free tier allows 8,000 tokens/minute. A sliding-window token bucket, fed by the token
   counts Groq returns, paces requests; 4 jobs per call amortise the prompt (~700 tokens/job).
 - **Cached.** Extraction is keyed on `content_hash` + `PROMPT_VERSION`, so unchanged jobs are never sent twice and
-  changing the prompt re-extracts everything.
+  changing the prompt re-extracts everything. Gold only uses extractions whose hash matches the job's *current*
+  text; stale ones fall back to keyword skills until they are re-extracted.
+- **Quota-aware.** The free tier also has a daily token cap. When Groq asks for a wait longer than 2 minutes, the run
+  stops extracting, publishes everything else, and the remaining jobs are picked up by the next run.
 - **Measured.** See *Evaluation*.
 
 ## Evaluation
@@ -80,8 +83,12 @@ Results: _run the three commands above; `eval/results.md` is then linked here._
 | Fewer than 30% cross-source duplicates | warn |
 | LLM found at least one skill for technical roles | warn |
 
-Real issues these caught during development: RemoteOK sends some text double-encoded (`â\x80\x94` instead of `—`)
-and once put an hourly rate (`30–36`) in its annual salary field. Both are now handled in the transform layer.
+Real issues these caught during development:
+- RemoteOK sends some text double-encoded (`â\x80\x94` instead of `—`) and once put an hourly rate (`30–36`) in its
+  annual salary field.
+- The `extracted_skills_nonempty` warning flagged senior engineering jobs where the LLM found no skills. The cause:
+  RemoteOK sends entity-escaped HTML and Arbeitnow wraps escaped HTML inside real tags, so the LLM was reading markup
+  instead of requirements. `html_to_text` now parses repeatedly until no tags remain (139 Arbeitnow descriptions fixed).
 
 ## Run it
 

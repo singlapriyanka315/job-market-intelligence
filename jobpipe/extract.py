@@ -47,6 +47,13 @@ Jobs:
 Reply as JSON: {{"jobs": [{{"id": <id>, "role_family": "...", "seniority": "...", "years_experience_min": null, "remote_policy": "...", "skills": ["..."]}}]}}"""
 
 
+MAX_WAIT_SECONDS = 120  # a longer retry-after means the daily quota is used up
+
+
+class QuotaExhausted(Exception):
+    """The provider asked us to wait longer than MAX_WAIT_SECONDS - stop LLM work for this run."""
+
+
 class TokenBucket:
     """Sliding one-minute window of tokens used."""
 
@@ -137,6 +144,8 @@ class Extractor:
             except RateLimitError as e:
                 self.bucket.record(GROQ_TOKENS_PER_MINUTE)  # treat the window as full
                 wait = float(e.response.headers.get("retry-after", 20)) if e.response is not None else 20
+                if wait > MAX_WAIT_SECONDS:
+                    raise QuotaExhausted(f"provider asked to wait {wait:.0f}s") from e
                 print(f"   rate limited, waiting {wait:.0f}s")
                 time.sleep(wait)
             except APIConnectionError:
@@ -148,16 +157,24 @@ class Extractor:
 
 
 def run(conn, limit):
-    """Extract up to `limit` jobs. Returns (extracted, missing) counts."""
+    """
+    Extract up to `limit` jobs. Returns (extracted, missing, stopped_reason).
+    If the daily quota runs out, stops cleanly: what was extracted is kept, the rest of the
+    pipeline still runs, and the remaining jobs are picked up by the next run.
+    """
     ex = Extractor()
     if not ex.enabled:
         print("   LLM off (no GROQ_API_KEY) - gold layer will use keyword skills")
-        return 0, 0
+        return 0, 0, "no API key"
     todo = db.jobs_needing_extraction(conn, PROMPT_VERSION, limit)
     done = missing = 0
     for i in range(0, len(todo), JOBS_PER_LLM_CALL):
         batch = todo[i:i + JOBS_PER_LLM_CALL]
-        results = ex.extract_batch(batch)
+        try:
+            results = ex.extract_batch(batch)
+        except QuotaExhausted as e:
+            print(f"   ! LLM quota exhausted ({e}) - stopping extraction; {len(todo) - done} jobs left for next run")
+            return done, len(todo) - done, "quota exhausted"
         for j in batch:
             if j["job_id"] in results:
                 db.save_extraction(conn, j["job_id"], j["content_hash"], PROMPT_VERSION, ex.model, results[j["job_id"]])
@@ -166,4 +183,4 @@ def run(conn, limit):
                 missing += 1
         conn.commit()
         print(f"   extracted {done}/{len(todo)}  ({ex.tokens_used:,} tokens, {ex.calls} calls)")
-    return done, missing
+    return done, missing, None
